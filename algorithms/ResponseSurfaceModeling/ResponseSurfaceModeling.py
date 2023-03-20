@@ -5,7 +5,7 @@ from scipy.optimize import minimize
 
 
 
-# Define the response surface model
+"""# Define the response surface model
 def response_surface(x, a, b, c, d, e, f):
     return a + b*x[0] + c*x[1] + d*x[2] + e*x[0]**2 + f*x[1]**2
 
@@ -40,4 +40,4 @@ result = minimize(objective_for_optimization, x0, method='SLSQP', bounds=bounds,
 
 # Print the results
 print('Optimal solution: x =', result.x)
-print('Objective function value at optimal solution: f(x) =', result.fun)
+print('Objective function value at optimal solution: f(x) =', result.fun)"""

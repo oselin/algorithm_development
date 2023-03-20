@@ -1,5 +1,11 @@
 import numpy as np
+from scipy.stats.qmc import LatinHypercube
 
+
+def latin_hypercube():
+    return 0
+
+'''
 def latin_hypercube(n_samples:int , dimension:int):
     """
     Generate a Latin Hypercube Sample of size n and dimension d.
@@ -18,3 +24,4 @@ def latin_hypercube(n_samples:int , dimension:int):
         for j in range(n_samples):
             samples[i,j] = (samples[i,j] - np.random.random())/n_samples
     return samples
+'''
