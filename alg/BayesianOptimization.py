@@ -2,10 +2,13 @@ from bayes_opt import BayesianOptimization
 
 def bayesian_optimization(fun, bounds, iterations, n_samples):
 
+    minf = lambda X,Y: (-1)*fun([X,Y])
     optimizer = BayesianOptimization(
-        f=fun,
-        pbounds=bounds,
-        random_state = 1
+        f = minf,
+        pbounds = bounds,
+        random_state = None,
+        allow_duplicate_points = True,
+        verbose = 0
     )
 
     optimizer.maximize(
@@ -15,8 +18,13 @@ def bayesian_optimization(fun, bounds, iterations, n_samples):
 
     return optimizer.max, optimizer.res
 
+def history_wrapper(params):
+    history = []
 
+    for elem in params:
+        history.append(-1 * elem['target'])
 
+    return history
 
 """
 
