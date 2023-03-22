@@ -8,21 +8,31 @@ from typing import List
 
 
 # Sampling methods
-def box_behnken(X:np.array,low=0.1, high=0.1) -> np.array:
-
+def box_behnken(X:np.array, bound) -> np.array:
     points = [X]
     for i in range(len(X)):
         x_lower, x_higher = X.copy(), X.copy()
-        x_lower[i] -= low
-        x_higher[i] += high
+        x_lower[i]  -= bound
+        x_higher[i] += bound
         points.append(x_lower)
         points.append(x_higher)
 
     return np.array(points).T
 
 
-def central_composite(X:np.array, low=0.1, high=0.1) -> np.array:
-    return
+def central_composite(X:np.array, bound) -> np.array:
+    
+    def new_row(idx):
+        row = [0 for _ in range(len(X))]
+        for arr_idx in range(len(row)):
+            row[arr_idx] = (-1)**(idx//(2**arr_idx)) * bound
+        return row
+    
+    permutations = []
+    for idx in range(2**len(X)): permutations.append(new_row(idx))
+
+    permutations = np.array(permutations)
+    return np.vstack((X,X + permutations)).T
 
 
 # Gradient estimation via finite difference
@@ -47,32 +57,37 @@ def next_step(model:Pipeline, X:List[float],Y:List[float], lr:float=0.01, method
 
         # Find the local minimum in the considered set
         min_idx = np.argmin(Y)
+        X_best = X[min_idx]
+        Y_best = Y[min_idx]
         # Apply the gradient descend to find the new point to analyze
         X_next = X[min_idx] - lr*gradient(model,X[min_idx], Y[min_idx])
 
-    return X_next
+    return X_next, X_best, Y_best
 
-def response_surface(fun, 
-                     X_new:List[float]=None, Xmin=None, Xmax=None, dimension=2, 
-                     iterations=100, 
-                     sampling_method="box_behnken", sampling_lb=0.5, sampling_ub=0.5,
-                     iteration_method="gradient", alpha=0.1
-                     ):
+def response_surface(fun, X_new:List[float], iterations=100, tol = 1e-8, sampling_method="box_behnken", sampling_bound=0.5,
+                     iteration_method="gradient", alpha=0.01):
 
     model = Pipeline([('poly',   PolynomialFeatures(degree=2)),
                     ('linear', LinearRegression(fit_intercept=False))]) 
 
 
-    
-    #if (X == None): X = np.random.uniform(low=Xmin, high=Xmax, size=[1,dimension])
-    X_h, Y_h = [], []
+    # Log arrays
+    X_log, Y_log = [], []
+
+    # If type(bounds) == array, iterative mode is requested
+    if (type(sampling_bound)== list):
+        sampling_bound = np.linspace(sampling_bound[0], sampling_bound[1], iterations)
+
     #alpha = np.linspace(0.01, 0.005, 10)
 
     for iter in range(iterations):
 
         # Find new samples to analyze
-        #if (sampling_method == "box_behnken"): 
-        samples = box_behnken(X_new, low=sampling_lb, high=sampling_ub)
+        if (sampling_method == "box_behnken"): 
+            samples = box_behnken(X_new, sampling_bound[iter])
+        elif (sampling_method == "central_composite"):
+            samples = central_composite(X_new, sampling_bound[iter])
+
 
         # Evaluate the function for those samples
         Y = fun(samples)
@@ -81,10 +96,13 @@ def response_surface(fun,
         model.fit(samples.T,Y)
 
         # Find the new starting point for the next iteration
-        X_new = next_step(model, samples.T,Y, lr=0.01)
+        X_new, X_best, Y_best = next_step(model, samples.T,Y, lr=alpha, method=iteration_method)
 
         # Update the set of analyzed points with the ones of this iteration
-        X_h.append(samples[:,np.argmin(Y)])
-        Y_h.append(np.min(Y))
-    
-    return np.array(X_h), np.array(Y_h)
+        X_log.append(X_best)
+        Y_log.append(Y_best)
+
+        # Convergence condition
+        if (len(Y_log) > 2 and np.abs(Y_log[-1] - Y_log[-2]) < tol): break
+    print("Required iterations:", iter)
+    return np.array(X_log), np.array(Y_log)
