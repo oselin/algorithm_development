@@ -7,8 +7,10 @@ from typing import List
 
 
 
-# Sampling methods
 def box_behnken(X:np.array, bound) -> np.array:
+    """
+    Box Behnken design function
+    """
     points = [X]
     for i in range(len(X)):
         x_lower, x_higher = X.copy(), X.copy()
@@ -17,11 +19,12 @@ def box_behnken(X:np.array, bound) -> np.array:
         points.append(x_lower)
         points.append(x_higher)
 
-    return np.array(points).T
-
+    return np.array(points)
 
 def central_composite(X:np.array, bound) -> np.array:
-    
+    """
+    Central composite design function
+    """
     def new_row(idx):
         row = [0 for _ in range(len(X))]
         for arr_idx in range(len(row)):
@@ -32,12 +35,14 @@ def central_composite(X:np.array, bound) -> np.array:
     for idx in range(2**len(X)): permutations.append(new_row(idx))
 
     permutations = np.array(permutations)
-    return np.vstack((X,X + permutations)).T
+    return np.vstack((X,X + permutations))
 
 
-# Gradient estimation via finite difference
+
 def gradient(model:Pipeline, X:List[float], y:float, delta_h:float=1e-5):
-    
+    """
+    Gradient function via finite difference
+    """
     # Create an array of zeros to allocate memory
     grad = np.zeros(len(X))
 
@@ -45,24 +50,40 @@ def gradient(model:Pipeline, X:List[float], y:float, delta_h:float=1e-5):
         Xh = X.copy() 
         # Add delta H in the i-th dimension
         Xh[i] += delta_h
-
         # Estimate the gradient via finite difference
         grad[i] = (model.predict([Xh]) - y) / delta_h
+
     return grad
 
 
-def next_step(model:Pipeline, X:List[float],Y:List[float], lr:float=0.01, method="gradient"):
+def expected_improvement(model:Pipeline, X:List[float]):
+    """
+    Expected improvement function from statistic
+    """
+    #y_hat = np.max(model.predict(X))
 
+    mu, std = model.predict(X, return_std=True)
+    print(mu)
+
+
+def next_step(model:Pipeline, X:List[float],Y:List[float], lr:float=0.01, method="gradient"):
+    """
+    Next step function: find the best point to sample at next iteration
+    """
     if (method == "gradient"):
 
         # Find the local minimum in the considered set
         min_idx = np.argmin(Y)
+  
         X_best = X[min_idx]
         Y_best = Y[min_idx]
         # Apply the gradient descend to find the new point to analyze
         X_next = X[min_idx] - lr*gradient(model,X[min_idx], Y[min_idx])
 
     return X_next, X_best, Y_best
+    #else:
+    #    expected_improvement(model, X)
+
 
 def response_surface(fun, X_new:List[float], iterations=100, tol = 1e-8, sampling_method="box_behnken", sampling_bound=0.5,
                      iteration_method="gradient", alpha=0.01):
@@ -74,7 +95,7 @@ def response_surface(fun, X_new:List[float], iterations=100, tol = 1e-8, samplin
     # Log arrays
     X_log, Y_log = [], []
 
-    # If type(bounds) == array, iterative mode is requested
+    # If type(bounds) == list, iterative mode is requested
     if (type(sampling_bound)== list):
         sampling_bound = np.linspace(sampling_bound[0], sampling_bound[1], iterations)
 
@@ -93,10 +114,10 @@ def response_surface(fun, X_new:List[float], iterations=100, tol = 1e-8, samplin
         Y = fun(samples)
 
         # Fit the model on those few samples
-        model.fit(samples.T,Y)
+        model.fit(samples,Y)
 
         # Find the new starting point for the next iteration
-        X_new, X_best, Y_best = next_step(model, samples.T,Y, lr=alpha, method=iteration_method)
+        X_new, X_best, Y_best = next_step(model, samples,Y, lr=alpha, method=iteration_method)
 
         # Update the set of analyzed points with the ones of this iteration
         X_log.append(X_best)
@@ -106,3 +127,4 @@ def response_surface(fun, X_new:List[float], iterations=100, tol = 1e-8, samplin
         if (len(Y_log) > 2 and np.abs(Y_log[-1] - Y_log[-2]) < tol): break
     print("Required iterations:", iter)
     return np.array(X_log), np.array(Y_log)
+

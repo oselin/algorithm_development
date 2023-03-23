@@ -20,7 +20,7 @@ def nelder_mead(fun, x0=None, low=-5, high=5, max_iter=200, alpha=1.0, gamma=2.0
     - n_iter (int): number of iterations performed.
     """
 
-    if(x0 == None or not x0.any()): x0 = np.random.uniform(low=low, high=high, size=(2,))
+    if(x0 is None): x0 = np.random.uniform(low=low, high=high, size=(2,))
 
     history = []
 

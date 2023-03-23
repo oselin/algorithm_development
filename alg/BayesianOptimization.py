@@ -15,7 +15,7 @@ def bayesian_optimization(fun, bounds, iterations, n_samples):
         init_points =n_samples,
         n_iter = iterations
     )
-
+    print(optimizer)
     return optimizer.max, optimizer.res
 
 def history_wrapper(params):
