@@ -1,119 +1,107 @@
-from bayes_opt import BayesianOptimization
-
-def bayesian_optimization(fun, bounds, iterations, n_samples):
-
-    minf = lambda X,Y: (-1)*fun([X,Y])
-    optimizer = BayesianOptimization(
-        f = minf,
-        pbounds = bounds,
-        random_state = None,
-        allow_duplicate_points = True,
-        verbose = 0
-    )
-
-    optimizer.maximize(
-        init_points =n_samples,
-        n_iter = iterations
-    )
-    print(optimizer)
-    return optimizer.max, optimizer.res
-
-def history_wrapper(params):
-    history = []
-
-    for elem in params:
-        history.append(-1 * elem['target'])
-
-    return history
-
-"""
-
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.gaussian_process import GaussianProcessRegressor
 from typing import List
 from scipy.stats import norm
 
-def StybliskiTang(x: List[float]) -> float:
-    f, dimension = 0, len(x)
-
-    for i in range(dimension):
-        xi = x[i]
-        f += xi**4 - 16*xi**2 + 5*xi
-    return f
-
 
 def surrogate_model(model: GaussianProcessRegressor, X):
-    prediction = model.predict(X, return_std=True)
+    prediction = model.predict(X.T, return_std=True)
     return prediction
 
-def acquisition(X, Xsamples, model):
+def acquisition(model, X, samples):
     yhat, _ = surrogate_model(model, X)
    
     best    = np.max(yhat)
-    print("best; ", best)
-    mu, std = surrogate_model(model, Xsamples)
-    print(yhat)
-    print(mu-np.max(yhat))
+    mu, std = surrogate_model(model, samples)
+
     probs = norm.cdf((mu - best) / (std + 1e-9))
-    print(probs)
+
     return probs
 
-def opt_acquisition(X, model):
+
+
+def bayesian_optimization(f, X:np.array=None, dimension:int=2, n_samples:int=15, max_iter:int=100, low=-5, high=5):
+
+    # Modify the function to obtain the minimization
+    fun = lambda x: (-1)*f(x)
+
     # Decide new samples to analyze
-    Xsamples =  np.random.uniform(low=-5, high=5, size=[15,2])
+    if (X is None): X =  np.random.uniform(low=low, high=high, size=[dimension,n_samples])
 
-    scores = acquisition(X, Xsamples, model)
+    # Evaluate the function
+    Y = fun(X)
 
-    ix = np.argmax(scores)
-    return Xsamples[ix,0]
+    # GaussianProcessRegressor(kernel=kernel)
+    model = GaussianProcessRegressor()
 
-# Define the number of samples
-n_samples = 15
+    # Training of the model
+    model.fit(X.T, Y)
+    for iter in range(max_iter):
 
-# GaussianProcessRegressor(kernel=kernel)
-model = GaussianProcessRegressor()
-# Pick random sample values
-X = np.random.uniform(low=-5, high=5, size=[n_samples,2])
-print(X.shape)
-# Compute the expensive objective function (in the wind tunnel)
-Y = StybliskiTang(X.T)
+        # Define random sample on which test the model
+        samples = np.random.uniform(low=low, high=high, size=[dimension, 100])
 
-# Apply the Bayesian optimization, namely refit the model
-model.fit(X,Y)
+        # Rate the samples according to their score
+        scores = acquisition(model, X, samples)
 
-# Estimate the surrogate mdel values
-y, _ = surrogate_model(model, X)
+        # Find the best for the minimization (the smallest)
+        idx = np.argmax(scores)
+
+        # New point
+        X_new = samples[:, idx].reshape(-1,1)
+
+        # Find the actual value
+        Y_new = fun(X_new)
+
+        #est, _ = surrogate_model(model, X_new)
+        #print(f"Estimation error:{Y_new - est}")
+
+        X = np.hstack((X, X_new))
+        Y = np.hstack((Y, Y_new))
+
+        model.fit(X.T, Y)
+
+    # fun was inverted. Let's revert it
+    Y = -1*Y
+    return X.T, Y.T
 
 
-# Perform the optimization process
-for i in range(100):
-    # select the next point to sample (random chosen point with the max likelihood)
-    x = opt_acquisition(X, model)
-    print(x.shape)
-    # sample the point (EXPENSIVE FUNCTION)
-    actual = StybliskiTang(x)
-    print(actual.shape)
-    # SURROGATE VALUES
-    est, _ = surrogate_model(model, x)
+####
+# TEST FUNCTION
 
-    print('>x=%.3f, f()=%3f, actual=%.3f' % (x, est, actual))
+# Define the X1 and X2 span
+# X1 = np.linspace(-5, 5, 101)
+# X2 = np.linspace(-5, 5, 101)
+# points = np.array([[x1,x2] for x1 in X1 for x2 in X2])
 
-    # add the data to the dataset FOR THE MODEL
-    X = np.vstack((X, [[x]]))
-    y = np.vstack((y, [[actual]]))
+# # Compute the function
+# # Fx = StybliskiTang(points.T)
+# X = np.linspace(0,1, 101).reshape(1,-1)
+# Fx = myfun(X)
 
-    # update the model
-    model.fit(X, Y)
- 
+# # Find minimum and its coordinates
+# idx  = np.argmin(Fx)
+# Xmin = points[idx]
 
-# best result
-ix = np.argmax(Y)
-print('Best Result: x=%.3f, y=%.3f. The estimated value is %.3f' % (X[ix], Y[ix], y[ix]))
+# # Run the optimization algorithm
+# X_alg, Y_alg = bayesian_optimization(myfun, dimension=1, n_samples=15, low=0, high=1, max_iter=300)
 
-fig = plt.figure(figsize=[8,8])
-ax = fig.add_subplot(1,1,1)
-#ax.scatter(X, Y)
-#ax.scatter(X, y, c="red")
+# print(f"[MIN function] Minimum in x={Xmin[0]},    y={Xmin[1]}    with f={Fx[idx]}")
+# #print(f"[OPTIMIZATION] Minimum in x={X_alg[-1,0]}, y={X_alg[-1,1]} with f={Y_alg[-1]}")
+# plt.plot(X[0], Fx.reshape(1, -1)[0])
+# plt.scatter(X_alg, Y_alg)
+# plt.show()
+# fig, ax = plt.subplots(1, 2, figsize=(16,8))
 
-"""
+# Fx = Fx.reshape(101,101)
+# ax[0].contourf(X1,X2,Fx)
+# ax[0].axis('scaled')
+# ax[0].scatter(X_alg[:,0], X_alg[:,1], c="red", s=1)
+# ax[0].scatter(X_alg[0,0], X_alg[0,1], c="blue",s=3)
+# ax[0].scatter(X_alg[-1,0],X_alg[-1,1],c="orange",s=3)
+# ax[1].plot(np.arange(0,len(Y_alg)), Y_alg)
+# ax[1].set_title("Performances over time")
+
+
+

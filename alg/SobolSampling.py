@@ -21,4 +21,4 @@ def sobol(n_samples:int , dimension:int, lower_bounds:List[float], upper_bounds:
     sample = samples.random(n_samples, workers=-1)
     qmc.scale(sample, lower_bounds, upper_bounds)
 
-    return sample
+    return np.array(sample)

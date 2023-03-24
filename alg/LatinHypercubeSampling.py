@@ -29,4 +29,4 @@ def latin_hypercube(n_samples:int , dimension:int, lower_bounds:List[float], upp
         for j in range(n_samples):
             samples[i,j] = (samples[i,j] - np.random.random())/n_samples
     """
-    return sample
+    return np.array(sample)

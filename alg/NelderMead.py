@@ -1,6 +1,17 @@
 import numpy as np
 
-def nelder_mead(fun, x0 = None, step=0.1, low=-5, high=5, no_improve_thr=10e-6, no_improv_break=10, max_iter=0, alpha=1., gamma=2., rho=-0.5, sigma=0.5):
+def StybliskiTang(x: np.array) -> float:
+
+    f, dimension = 0, len(x)
+
+    for i in range(dimension):
+        xi = x[i]
+        f += xi**4 - 16*xi**2 + 5*xi
+    return f/2
+
+def nelder_mead(fun, x0 = None, low=-5, high=5, step=0.1, 
+                no_improve_thr=10e-6, no_improv_break=10, 
+                max_iter=10, alpha=1., gamma=2., rho=-0.5, sigma=0.5):
     """
     Nelder mead optimization algorithm
 
@@ -18,87 +29,85 @@ def nelder_mead(fun, x0 = None, step=0.1, low=-5, high=5, no_improve_thr=10e-6, 
     - A tuple (best parameter array, best score)
     """
 
-    if(x0 is None): x0 = np.random.uniform(low=low, high=high, size=(1,2))
+    if (x0 is None): x0 = np.random.uniform(low=low, high=high, size=(2,1))
 
-    #dim = len(x_start)
-    X = x0.copy()
-    Y = np.array(fun(x0)).reshape(-1,1)
+    dim, no_improv = len(x0), 0
 
-    #no_improv = 0
 
-    # Apply the displacement in each direction, one at a time
-    for i in range(X.shape[1]):
-        X = np.vstack((X, X[-1,i] + step))
-        Y = np.vstack((Y, fun(X[-1])))
+    # Creation of the simplex
+    simplex = np.zeros((dim, dim + 1))
+    simplex[:, 0] = x0.T
 
-    print(X)
-    print(Y)
+    for i in range(dim):
+        point = np.zeros(dim)
+        point[i] = step
+        simplex[:, i + 1] = x0.T.copy() + point
+    fs = fun(simplex)
+    
+    # Log variables
+    X_log = simplex.copy()
+    Y_log = fs.copy()
 
-    # for iteration in range(max_iter):
+
+    for iteration in range(max_iter):
+        # 1 - Sort the values
+        inds = np.argsort(fs)
+        fs = fs[inds]
+        simplex = simplex[:, inds]
+
+        # Log the best value
+        X_log = np.hstack((X_log, simplex[:,0].reshape(-1,1)))
+        Y_log = np.hstack((Y_log, fs[0]))
+
         
-    #     # order
-    #     res.sort(key=lambda x: x[1])
-    #     best = res[0][1]
+        # Break if no improvement has been reached
+        if (Y_log[-1] < Y_log[-2] - no_improve_thr): no_improv = 0
+        else: no_improv += 1
 
-    #     # break after max_iter
-    #     if max_iter and iters >= max_iter:
-    #         return res[0]
-    #     iters += 1
+        if no_improv >= no_improv_break: break
 
-    #     # break after no_improv_break iterations with no improvement
-    #     #print '...best so far:', best
+        # 2 - centroid
+        x0 = np.mean(simplex[:, :-1], axis=1).reshape(-1,1)
 
-    #     if best < prev_best - no_improve_thr:
-    #         no_improv = 0
-    #         prev_best = best
-    #     else:
-    #         no_improv += 1
+        # 3 - reflection
+        xr = x0 + alpha*(x0 - simplex[:, -1].reshape(-1,1))
+        fxr = fun(xr)
 
-    #     if no_improv >= no_improv_break:
-    #         return res[0]
+        if (fs[0] <= fxr < fs[-2]):
+            fs[-1] = fxr
+            simplex[:,-1] = xr.T
+            continue
 
-    #     # centroid
-    #     x0 = [0.] * dim
-    #     for tup in res[:-1]:
-    #         for i, c in enumerate(tup[0]):
-    #             x0[i] += c / (len(res)-1)
+        # 4 - Expansion
+        if (fxr < fs[0]):
+            xe = x0 + gamma*(xr - x0)
+            fxe = fun(xe)
 
-    #     # reflection
-    #     xr = x0 + alpha*(x0 - res[-1][0])
-    #     rscore = f(xr)
-    #     if res[0][1] <= rscore < res[-2][1]:
-    #         del res[-1]
-    #         res.append([xr, rscore])
-    #         continue
+            if (fxe < fxr):
+                fs[-1] = fxe
+                simplex[:,-1] = xe.T
+            else:
+                fs[-1] = fxr
+                simplex[:,-1] = xr.T
+            continue
 
-    #     # expansion
-    #     if rscore < res[0][1]:
-    #         xe = x0 + gamma*(x0 - res[-1][0])
-    #         escore = f(xe)
-    #         if escore < rscore:
-    #             del res[-1]
-    #             res.append([xe, escore])
-    #             continue
-    #         else:
-    #             del res[-1]
-    #             res.append([xr, rscore])
-    #             continue
+        # 5 - contraction
+        if (fxr < fs[-1]):
+            xc = x0 + rho*(xr - x0)
+            fxc = fun(xc)
+            if (fxc < fxr):
+                fs[-1] = fxc
+                simplex[:,-1] = xc.T            
+                continue
+        else:
+            xc = x0 + rho*(simplex[:,-1].reshape(-1,1) - x0)
+            fxc = fun(xc)
+            if (fxc < fs[-1]):
+                fs[-1] = fxc
+                simplex[:,-1] = xc.T 
+                continue
 
-    #     # contraction
-    #     xc = x0 + rho*(x0 - res[-1][0])
-    #     cscore = f(xc)
-    #     if cscore < res[-1][1]:
-    #         del res[-1]
-    #         res.append([xc, cscore])
-    #         continue
+        # 6 - Shrink
+        simplex[:,1:] = simplex[:,0] + sigma*(simplex[:,1:] - simplex[:,0])
 
-    #     # reduction
-    #     x1 = res[0][0]
-    #     nres = []
-    #     for tup in res:
-    #         redx = x1 + sigma*(tup[0] - x1)
-    #         score = f(redx)
-    #         nres.append([redx, score])
-    #     res = nres
-
-
+    return X_log.T, Y_log.T
