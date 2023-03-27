@@ -89,7 +89,7 @@ def next_step(model:Pipeline, X:List[float],Y:List[float], lr:float=0.01, method
 
 
 def response_surface(fun, x0:List[float], sampling_budget:int=100, tol = 1e-8, sampling_method="box_behnken", sampling_bound=0.5,
-                     iteration_method="gradient", learning_rate=0.01):
+                     iteration_method="gradient", learning_rate=0.01, verbose=False):
 
     model = Pipeline([('poly',   PolynomialFeatures(degree=2)),
                       ('linear', LinearRegression(fit_intercept=False))]) 
@@ -139,7 +139,7 @@ def response_surface(fun, x0:List[float], sampling_budget:int=100, tol = 1e-8, s
         # Convergence condition
         if (iter > 2 and np.abs(Y_log[-1] - Y_log[-2]) < tol): break
 
-    print("Required iterations:", iter)
+    if (verbose): print("Required iterations:", iter)
 
     X_best, Y_best = X_log[:, -1], Y_log[-1]
     

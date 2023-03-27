@@ -22,7 +22,7 @@ def gradient(model:Pipeline, X:np.array, Y:float, delta_h:float=1e-3):
     return grad.reshape(-1,1)
 
 
-def bfgs(fun, x0=np.array, x1=np.array, sampling_budget:int=100, tol=10e-6):
+def bfgs(fun, x0=np.array, x1=np.array, sampling_budget:int=100, tol=10e-6, verbose=False):
 
     # Initialization of the surrogate model
     model = Pipeline([('poly',   PolynomialFeatures(degree=2)), ('linear', LinearRegression(fit_intercept=False))]) 
@@ -62,7 +62,7 @@ def bfgs(fun, x0=np.array, x1=np.array, sampling_budget:int=100, tol=10e-6):
         Y_log = np.hstack((Y_log, fun(x_next)))
 
         if (np.linalg.norm(gradient(model, x_next, Y_log[-1])) < tol):
-            print(f"Stopped at iteration {iter}")
+            if (verbose): print(f"Stopped at iteration {iter}")
             break
         
 

@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.stats import qmc
 from typing import List
+import warnings
 
 
 def sobol_sampling(n_samples:int , dimension:int, lower_bounds:List[float], upper_bounds:List[float]):
@@ -26,7 +27,10 @@ def sobol_sampling(n_samples:int , dimension:int, lower_bounds:List[float], uppe
 
 def sobol(fun, n_samples:int , dimension:int, lower_bounds:List[float], upper_bounds:List[float]):
 
-    X_log = sobol_sampling(n_samples=n_samples , dimension=dimension, lower_bounds=lower_bounds, upper_bounds=upper_bounds)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        X_log = sobol_sampling(n_samples=n_samples , dimension=dimension, lower_bounds=lower_bounds, upper_bounds=upper_bounds)
+        
     Y_log = fun(X_log.T)
 
     idx = np.argmin(Y_log)
