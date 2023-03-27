@@ -1,9 +1,9 @@
 import numpy as np
-def particle_swarm(fun, X=None, V=None, low=-5, high=5, max_iter=1000, n_particles=50, tol=10e-6, c1=0.1, c2=0.1, w=0.8):
+def particle_swarm(fun, X=None, V=None, dimension:int=2, low=-5, high=5, sampling_budget:int=1000, n_particles=50, tol=10e-6, c1=0.1, c2=0.1, w=0.8):
 
     
-    if (X is None): X = np.random.uniform(low=low, high=high, size=(2, n_particles))
-    if (V is None): V = np.random.randn(2, n_particles) * 0.1
+    if (X is None): X = np.random.uniform(low=low, high=high, size=(dimension, n_particles))
+    if (V is None): V = np.random.randn(dimension, n_particles) * 0.1
 
     # Initialize data for the first iteration
     # Set the best coord for i-th particle + store f(x) values
@@ -17,8 +17,9 @@ def particle_swarm(fun, X=None, V=None, low=-5, high=5, max_iter=1000, n_particl
     # Initalize the log variables
     X_log, Y_log = gbest.copy(), np.array([gbest_obj])
     
-    for iteration in range(max_iter):
+    max_iter = (sampling_budget//n_particles) - 1
 
+    for iteration in range(max_iter):
         # Set the random coefficients
         r1, r2 = np.random.rand(2)
 
@@ -48,4 +49,7 @@ def particle_swarm(fun, X=None, V=None, low=-5, high=5, max_iter=1000, n_particl
         # if (np.abs(Y_log[-1] - Y_log[-2]) < tol):
         #     print(f"Tollearnce reacehed, {iteration} iterations is enough.")
         #     break
-    return np.array(X_log).T, np.array(Y_log).T
+
+    X_best, Y_best = X_log[:, -1], Y_log[-1]
+
+    return X_best, Y_best, X_log.T, Y_log.T

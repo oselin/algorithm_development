@@ -88,42 +88,60 @@ def next_step(model:Pipeline, X:List[float],Y:List[float], lr:float=0.01, method
     #    expected_improvement(model, X)
 
 
-def response_surface(fun, X_new:List[float], iterations=100, tol = 1e-8, sampling_method="box_behnken", sampling_bound=0.5,
-                     iteration_method="gradient", alpha=0.01):
+def response_surface(fun, x0:List[float], sampling_budget:int=100, tol = 1e-8, sampling_method="box_behnken", sampling_bound=0.5,
+                     iteration_method="gradient", learning_rate=0.01):
 
     model = Pipeline([('poly',   PolynomialFeatures(degree=2)),
-                    ('linear', LinearRegression(fit_intercept=False))]) 
+                      ('linear', LinearRegression(fit_intercept=False))]) 
 
-
+    # Be sure the point is in the right format
+    x0 = x0.reshape(-1, 1)
+    
     # Log arrays
-    X_log, Y_log = [], []
+    X_log, Y_log = None, None
+
+    dimensions = len(x0)
+
+    if   (sampling_method == "box_behnken"):       coeff = 2*dimensions + 1  # box_behnken output: 2n + 1 samples
+    elif (sampling_method == "central_composite"): coeff = 2**dimensions + 1 # central_composite output: 2^n + 1 samples
+    max_iter = sampling_budget//coeff
 
     # If type(bounds) == list, iterative mode is requested
-    if (type(sampling_bound)== list): sampling_bound = np.linspace(sampling_bound[0], sampling_bound[1], iterations)
+    if (type(sampling_bound)== list): sampling_bound = np.linspace(sampling_bound[0], sampling_bound[1], max_iter)
+    else: sampling_bound = [sampling_bound]*max_iter
 
-    #alpha = np.linspace(0.01, 0.005, 10)
+    # If type(bounds) == list, iterative mode is requested
+    if (type(learning_rate)== list): learning_rate = np.linspace(learning_rate[0], learning_rate[1], max_iter)
+    else: learning_rate = [learning_rate]*max_iter
 
-    for iter in range(iterations):
+    X_new = x0.copy()
+    for iter in range(max_iter):
 
         # Find new samples to analyze
-        if (sampling_method == "box_behnken"):          samples = box_behnken(X_new, sampling_bound[iter])
+        if   (sampling_method == "box_behnken"):        samples = box_behnken(X_new, sampling_bound[iter])
         elif (sampling_method == "central_composite"):  samples = central_composite(X_new, sampling_bound[iter])
 
         # Evaluate the function for those samples
         Y = fun(samples)
 
         # Fit the model on those few samples
-        model.fit(samples.T,Y.T)
+        model.fit(samples.T, Y)
         # Find the new starting point for the next iteration
-        X_new, X_best, Y_best = next_step(model, samples,Y, lr=alpha, method=iteration_method)
+        X_new, X_best, Y_best = next_step(model, samples, Y, lr=learning_rate, method=iteration_method)
 
         # Update the set of analyzed points with the ones of this iteration
-        X_log.append(X_best)
-        Y_log.append(Y_best)
+        if (X_log is None): X_log = X_best.copy()
+        else: X_log = np.hstack((X_log, X_best))
+
+        if (Y_log is None): Y_log = Y_best.copy()
+        else: Y_log = np.hstack((Y_log, Y_best))
 
         # Convergence condition
-        if (len(Y_log) > 2 and np.abs(Y_log[-1] - Y_log[-2]) < tol): break
+        if (iter > 2 and np.abs(Y_log[-1] - Y_log[-2]) < tol): break
 
     print("Required iterations:", iter)
-    return np.array(X_log), np.array(Y_log)
+
+    X_best, Y_best = X_log[:, -1], Y_log[-1]
+    
+    return X_best, Y_best, X_log.T, Y_log.T
 

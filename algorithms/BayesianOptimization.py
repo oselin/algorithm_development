@@ -21,7 +21,7 @@ def acquisition(model, X, samples):
 
 
 
-def bayesian_optimization(f, X:np.array=None, dimension:int=2, n_samples:int=15, max_iter:int=100, low=-5, high=5):
+def bayesian_optimization(f, X:np.array=None, dimension:int=2, n_samples:int=15, sampling_budget:int=100, low=-5, high=5):
 
     # Modify the function to obtain the minimization
     fun = lambda x: (-1)*f(x)
@@ -37,10 +37,12 @@ def bayesian_optimization(f, X:np.array=None, dimension:int=2, n_samples:int=15,
 
     # Training of the model
     model.fit(X.T, Y)
+    max_iter = sampling_budget - n_samples
+
     for iter in range(max_iter):
 
         # Define random sample on which test the model
-        samples = np.random.uniform(low=low, high=high, size=[dimension, 100])
+        samples = np.random.uniform(low=low, high=high, size=[dimension, n_samples])
 
         # Rate the samples according to their score
         scores = acquisition(model, X, samples)
@@ -64,7 +66,10 @@ def bayesian_optimization(f, X:np.array=None, dimension:int=2, n_samples:int=15,
 
     # fun was inverted. Let's revert it
     Y = -1*Y
-    return X.T, Y.T
+
+    idx = np.argmin(Y)
+    X_best, Y_best = X[:, idx], Y[idx]
+    return X_best, Y_best, X.T, Y.T
 
 
 ####

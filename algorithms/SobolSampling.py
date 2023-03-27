@@ -3,7 +3,7 @@ from scipy.stats import qmc
 from typing import List
 
 
-def sobol(n_samples:int , dimension:int, lower_bounds:List[float], upper_bounds:List[float]):
+def sobol_sampling(n_samples:int , dimension:int, lower_bounds:List[float], upper_bounds:List[float]):
     """
     Generate a Latin Hypercube Sample of size n and dimension d.
 
@@ -18,7 +18,18 @@ def sobol(n_samples:int , dimension:int, lower_bounds:List[float], upper_bounds:
     """
 
     samples = qmc.Sobol(scramble=False, d=dimension)
-    sample = samples.random(n_samples, workers=-1)
-    qmc.scale(sample, lower_bounds, upper_bounds)
+    samples = samples.random(n_samples, workers=-1)
+    samples = qmc.scale(samples, lower_bounds, upper_bounds)
 
-    return np.array(sample)
+    return samples
+
+
+def sobol(fun, n_samples:int , dimension:int, lower_bounds:List[float], upper_bounds:List[float]):
+
+    X_log = sobol_sampling(n_samples=n_samples , dimension=dimension, lower_bounds=lower_bounds, upper_bounds=upper_bounds)
+    Y_log = fun(X_log.T)
+
+    idx = np.argmin(Y_log)
+    X_best, Y_best  = X_log[idx], Y_log[idx]
+
+    return X_best, Y_best, X_log, Y_log

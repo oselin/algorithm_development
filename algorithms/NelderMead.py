@@ -1,17 +1,9 @@
 import numpy as np
 
-def StybliskiTang(x: np.array) -> float:
-
-    f, dimension = 0, len(x)
-
-    for i in range(dimension):
-        xi = x[i]
-        f += xi**4 - 16*xi**2 + 5*xi
-    return f/2
 
 def nelder_mead(fun, x0 = None, low=-5, high=5, step=0.1, 
                 no_improve_thr=10e-6, no_improv_break=10, 
-                max_iter=10, alpha=1., gamma=2., rho=-0.5, sigma=0.5):
+                sampling_budget:int=10, alpha=1., gamma=2., rho=-0.5, sigma=0.5):
     """
     Nelder mead optimization algorithm
 
@@ -31,6 +23,9 @@ def nelder_mead(fun, x0 = None, low=-5, high=5, step=0.1,
 
     if (x0 is None): x0 = np.random.uniform(low=low, high=high, size=(2,1))
 
+    # Be sure the point is in the right format
+    x0 = x0.reshape(-1, 1)
+    
     dim, no_improv = len(x0), 0
 
 
@@ -48,7 +43,8 @@ def nelder_mead(fun, x0 = None, low=-5, high=5, step=0.1,
     X_log = simplex.copy()
     Y_log = fs.copy()
 
-
+    max_iter = (sampling_budget - (dim+1))//4
+    
     for iteration in range(max_iter):
         # 1 - Sort the values
         inds = np.argsort(fs)
@@ -110,4 +106,6 @@ def nelder_mead(fun, x0 = None, low=-5, high=5, step=0.1,
         # 6 - Shrink
         simplex[:,1:] = simplex[:,0] + sigma*(simplex[:,1:] - simplex[:,0])
 
-    return X_log.T, Y_log.T
+    X_best, Y_best = X_log[:, -1], Y_log[-1]
+
+    return X_best, Y_best, X_log.T, Y_log.T
