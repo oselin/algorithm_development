@@ -1,11 +1,10 @@
-from benchmark.benchmarkFunctions import StybliskiTang
 import numpy as np
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.pipeline import Pipeline
 
 
-def gradient(model:Pipeline, X:np.array, Y:float, delta_h:float=1e-3):
+def gradient(model, X:np.array, delta_h:float=1e-3):
     """
     Gradient function via finite difference
     """
@@ -17,53 +16,56 @@ def gradient(model:Pipeline, X:np.array, Y:float, delta_h:float=1e-3):
         # Add delta H in the i-th dimension
         Xh[i] += delta_h
         # Estimate the gradient via finite difference
-        grad[i] = (model.predict(Xh.T) - Y) / delta_h
+        grad[i] = (model(Xh) - model(X)) / delta_h
 
     return grad.reshape(-1,1)
 
 
-def bfgs(fun, x0=np.array, x1=np.array, sampling_budget:int=100, tol=10e-6, verbose=False):
+def bfgs(fun, dimension:int=2, boundaries=None, sampling_budget:int=100, tol=10e-6, verbose=False):
 
     # Initialization of the surrogate model
-    model = Pipeline([('poly',   PolynomialFeatures(degree=2)), ('linear', LinearRegression(fit_intercept=False))]) 
+    #model = Pipeline([('poly',   PolynomialFeatures(degree=2)), ('linear', LinearRegression(fit_intercept=False))]) 
 
 
-    # Reshape of the initial points as column vector (Algebra notation)
-    x0 = x0.reshape(-1, 1)
-    x1 = x1.reshape(-1, 1)
+    # Define the two initial points to fit the model (Algebra notation)
+    boundaries = np.array(boundaries)
+    x0 = np.random.uniform(low=boundaries[0], high=boundaries[1], size=[2,dimension]).T
 
-    dim = len(x0)
-    B_inv = np.eye(dim)
+    B_inv = np.eye(dimension)
 
-    x_k    = x0.copy()
-    x_next = x1.copy()
+    x_prev    = x0[:,0].reshape(-1,1)
+    x_k       = x0[:,1].reshape(-1,1)
 
-    X_log = np.hstack((x_k, x_next))
+    X_log = np.hstack((x_prev, x_k))
     Y_log = np.array(fun(X_log))
 
     max_iter = (sampling_budget  - 2)
 
     for iter in range(max_iter):
         # Fit the model on those few samples
-
-        model.fit(X_log.T,Y_log.T)
-
+        #model.fit(X_log.T,Y_log)
+        model = fun
         # Compute the two factors: differnce in the gradient, difference in the position
-        x_delta = x_next - x_k
-        y       = gradient(model,x_next, Y_log[-1]) - gradient(model, x_k, Y_log[-2])
+        x_delta = x_k - x_prev
+        y       = gradient(model, x_k, Y_log[-1]) - gradient(model, x_prev, Y_log[-2])
 
         # Update the Inverse of the Hessian approximation
-        B_inv = (np.eye(dim) - (x_delta @ y.T)/ (y.T @ x_delta)) @ B_inv @ (np.eye(dim) - (y @ x_delta.T)/(y.T @ x_delta)) + (x_delta @ x_delta.T)/(y.T @ x_delta)
+        B_inv = (np.eye(dimension) - (x_delta @ y.T)/ (y.T @ x_delta)) @ B_inv @ (np.eye(dimension) - (y @ x_delta.T)/(y.T @ x_delta)) + (x_delta @ x_delta.T)/(y.T @ x_delta)
        
-        # Update for next iteration
-        x_next, x_k = x_next - B_inv @ gradient(model,x_next, Y_log[-1]), x_next.copy()
+        # Update the point
+        x_new = x_k - B_inv @ gradient(model, x_k, Y_log[-1])
 
-        X_log = np.hstack((X_log, x_next))
-        Y_log = np.hstack((Y_log, fun(x_next)))
+        # Log the new value
+        X_log = np.hstack((X_log, x_new))
+        Y_log = np.hstack((Y_log, fun(x_new)))
 
-        if (np.linalg.norm(gradient(model, x_next, Y_log[-1])) < tol):
+        if (np.linalg.norm(gradient(model, x_new, Y_log[-1])) < tol):
             if (verbose): print(f"Stopped at iteration {iter}")
             break
+        
+        # Update for next iteration
+        x_prev = x_k.copy().reshape(-1,1)
+        x_k = x_new.copy().reshape(-1,1)
         
 
     X_best, Y_best = X_log[:,-1], Y_log[-1]

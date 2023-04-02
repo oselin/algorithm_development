@@ -1,7 +1,6 @@
 import numpy as np
 
-
-def nelder_mead(fun, x0 = None, low=-5, high=5, step=0.1, 
+def nelder_mead(fun, dimension:int=2, boundaries=None, step=0.1, 
                 no_improve_thr=10e-6, no_improv_break=10, 
                 sampling_budget:int=10, alpha=1., gamma=2., rho=-0.5, sigma=0.5):
     """
@@ -21,30 +20,26 @@ def nelder_mead(fun, x0 = None, low=-5, high=5, step=0.1,
     - A tuple (best parameter array, best score)
     """
 
-    if (x0 is None): x0 = np.random.uniform(low=low, high=high, size=(2,1))
+    boundaries = np.array(boundaries)
 
-    # Be sure the point is in the right format
-    x0 = x0.reshape(-1, 1)
+    # Choose the initial point
+    x0 = np.random.uniform(low=boundaries[0], high=boundaries[1], size=(1,dimension)).T
     
-    dim, no_improv = len(x0), 0
+    no_improv = 0
 
 
     # Creation of the simplex
-    simplex = np.zeros((dim, dim + 1))
+    simplex = np.zeros((dimension, dimension + 1))
     simplex[:, 0] = x0.T
 
-    for i in range(dim):
-        point = np.zeros(dim)
+    for i in range(dimension):
+        point = np.zeros(dimension)
         point[i] = step
         simplex[:, i + 1] = x0.T.copy() + point
     fs = fun(simplex)
     
-    # Log variables
-    X_log = simplex.copy()
-    Y_log = fs.copy()
+    max_iter = (sampling_budget - (dimension+1))//4
 
-    max_iter = (sampling_budget - (dim+1))//4
-    
     for iteration in range(max_iter):
         # 1 - Sort the values
         inds = np.argsort(fs)
@@ -52,12 +47,16 @@ def nelder_mead(fun, x0 = None, low=-5, high=5, step=0.1,
         simplex = simplex[:, inds]
 
         # Log the best value
-        X_log = np.hstack((X_log, simplex[:,0].reshape(-1,1)))
-        Y_log = np.hstack((Y_log, fs[0]))
+        if (iteration == 0):
+            X_log = simplex[:,0].copy().reshape(-1,1)
+            Y_log = np.array([fs[0]])
+        else:
+            X_log = np.hstack((X_log, simplex[:,0].reshape(-1,1)))
+            Y_log = np.hstack((Y_log, fs[0]))
 
         
         # Break if no improvement has been reached
-        if (Y_log[-1] < Y_log[-2] - no_improve_thr): no_improv = 0
+        if (iteration > 3 and Y_log[-1] < Y_log[-2] - no_improve_thr): no_improv = 0
         else: no_improv += 1
 
         if no_improv >= no_improv_break: break
@@ -70,8 +69,8 @@ def nelder_mead(fun, x0 = None, low=-5, high=5, step=0.1,
         fxr = fun(xr)
 
         if (fs[0] <= fxr < fs[-2]):
-            fs[-1] = fxr
-            simplex[:,-1] = xr.T
+            fs[-1] = fxr.copy()
+            simplex[:,-1] = xr.copy().T
             continue
 
         # 4 - Expansion
@@ -80,11 +79,11 @@ def nelder_mead(fun, x0 = None, low=-5, high=5, step=0.1,
             fxe = fun(xe)
 
             if (fxe < fxr):
-                fs[-1] = fxe
-                simplex[:,-1] = xe.T
+                fs[-1] = fxe.copy()
+                simplex[:,-1] = xe.copy().T
             else:
-                fs[-1] = fxr
-                simplex[:,-1] = xr.T
+                fs[-1] = fxr.copy()
+                simplex[:,-1] = xr.copy().T
             continue
 
         # 5 - contraction
@@ -92,19 +91,20 @@ def nelder_mead(fun, x0 = None, low=-5, high=5, step=0.1,
             xc = x0 + rho*(xr - x0)
             fxc = fun(xc)
             if (fxc < fxr):
-                fs[-1] = fxc
-                simplex[:,-1] = xc.T            
-                continue
+                fs[-1] = fxc.copy()
+                simplex[:,-1] = xc.copy().T          
+                continue  
         else:
             xc = x0 + rho*(simplex[:,-1].reshape(-1,1) - x0)
             fxc = fun(xc)
             if (fxc < fs[-1]):
-                fs[-1] = fxc
+                fs[-1] = fxc.copy()
                 simplex[:,-1] = xc.T 
                 continue
 
+
         # 6 - Shrink
-        simplex[:,1:] = simplex[:,0] + sigma*(simplex[:,1:] - simplex[:,0])
+        simplex[:,1:] = simplex[:,0].reshape(-1,1) + sigma*(simplex[:,1:] - simplex[:,0].reshape(-1,1))
 
     X_best, Y_best = X_log[:, -1], Y_log[-1]
 

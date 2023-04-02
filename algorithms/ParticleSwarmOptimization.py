@@ -1,9 +1,11 @@
 import numpy as np
-def particle_swarm(fun, X=None, V=None, dimension:int=2, low=-5, high=5, sampling_budget:int=1000, n_particles=50, tol=10e-6, c1=0.1, c2=0.1, w=0.8):
+def particle_swarm(fun, dimension:int=2, pos_boundaries=None, vel_boundaries=None, sampling_budget:int=1000, n_particles=50, tol=10e-6, c1=0.1, c2=0.1, w=0.8):
 
+    pos_boundaries = np.array(pos_boundaries)
+    vel_boundaries = np.array(vel_boundaries)
     
-    if (X is None): X = np.random.uniform(low=low, high=high, size=(dimension, n_particles))
-    if (V is None): V = np.random.randn(dimension, n_particles) * 0.1
+    X = np.random.uniform(low=pos_boundaries[0], high=pos_boundaries[1], size=(n_particles, dimension)).T
+    V = np.random.uniform(low=vel_boundaries[0], high=vel_boundaries[1], size=(n_particles, dimension)).T
 
     # Initialize data for the first iteration
     # Set the best coord for i-th particle + store f(x) values
@@ -53,3 +55,4 @@ def particle_swarm(fun, X=None, V=None, dimension:int=2, low=-5, high=5, samplin
     X_best, Y_best = X_log[:, -1], Y_log[-1]
 
     return X_best, Y_best, X_log.T, Y_log.T
+
