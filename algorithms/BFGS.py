@@ -4,7 +4,7 @@ from sklearn.preprocessing import PolynomialFeatures
 from sklearn.pipeline import Pipeline
 
 
-def gradient(model, X:np.array, delta_h:float=1e-3):
+def gradient(model:Pipeline, X:np.array, Y:float, delta_h:float=1e-3):
     """
     Gradient function via finite difference
     """
@@ -16,7 +16,7 @@ def gradient(model, X:np.array, delta_h:float=1e-3):
         # Add delta H in the i-th dimension
         Xh[i] += delta_h
         # Estimate the gradient via finite difference
-        grad[i] = (model(Xh) - model(X)) / delta_h
+        grad[i] = (model.predict(Xh.T) - Y) / delta_h
 
     return grad.reshape(-1,1)
 
@@ -24,7 +24,7 @@ def gradient(model, X:np.array, delta_h:float=1e-3):
 def bfgs(fun, dimension:int=2, boundaries=None, sampling_budget:int=100, tol=10e-6, verbose=False):
 
     # Initialization of the surrogate model
-    #model = Pipeline([('poly',   PolynomialFeatures(degree=2)), ('linear', LinearRegression(fit_intercept=False))]) 
+    model = Pipeline([('poly',   PolynomialFeatures(degree=2)), ('linear', LinearRegression(fit_intercept=False))]) 
 
 
     # Define the two initial points to fit the model (Algebra notation)
@@ -43,8 +43,8 @@ def bfgs(fun, dimension:int=2, boundaries=None, sampling_budget:int=100, tol=10e
 
     for iter in range(max_iter):
         # Fit the model on those few samples
-        #model.fit(X_log.T,Y_log)
-        model = fun
+        model.fit(X_log.T,Y_log)
+
         # Compute the two factors: differnce in the gradient, difference in the position
         x_delta = x_k - x_prev
         y       = gradient(model, x_k, Y_log[-1]) - gradient(model, x_prev, Y_log[-2])

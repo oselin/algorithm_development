@@ -39,7 +39,7 @@ def approx_gradient(f, x, h):
         g[i] = (f(x1) - f(x2)) / (2*h)
     return g
 
-x0 = np.array([1.0, 2.0])
+x0 = np.array([1.0, 2.0]).reshape(-1,1)
 
 a = bfgs(StybliskiTang, x0)
 print("MIN:", a)
