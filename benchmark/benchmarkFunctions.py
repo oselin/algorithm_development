@@ -1,6 +1,5 @@
 
 import numpy as np
-from typing import List
 
 
 """
@@ -9,7 +8,7 @@ from typing import List
     
 """
 
-def StybliskiTang(x: np.array|List[float]) -> float:
+def StybliskiTang(x: np.array) -> float:
 
     f, dimension = 0, len(x)
 
@@ -18,7 +17,7 @@ def StybliskiTang(x: np.array|List[float]) -> float:
         f += xi**4 - 16*xi**2 + 5*xi
     return f/2
     
-def Rastrigin(x: List[float]) -> float:
+def Rastrigin(x: np.array) -> float:
     f, dimension = 0, len(x)
     f = 10*dimension
 
@@ -29,7 +28,7 @@ def Rastrigin(x: List[float]) -> float:
     return f
 
 
-def Rosenbrock(x: List[float]) -> float:
+def Rosenbrock(x: np.array) -> float:
     f, dimension = 0, len(x)
 
     for i in range(dimension-1):
@@ -39,7 +38,7 @@ def Rosenbrock(x: List[float]) -> float:
     return f
 
 
-def Beale(x: List[float]) -> float:
+def Beale(x: np.array) -> float:
     x1, x2 = x[0], x[1]
 
     term1 = (1.5 - x1 + x1*x2)**2
@@ -49,7 +48,7 @@ def Beale(x: List[float]) -> float:
     return (term1 + term2 + term3)
 
 
-def Sphere(x: List[float]) -> float:
+def Sphere(x: np.array) -> float:
     f, dimension = 0, len(x)
 
     for i in range(dimension):
@@ -59,7 +58,7 @@ def Sphere(x: List[float]) -> float:
     return f
 
 
-def Perm(x: List[float], beta:float=0.5) -> float:
+def Perm(x: np.array, beta:float=0.5) -> float:
     f, dimension = 0, len(x)
 
     for i in range(1, dimension+1):
@@ -72,7 +71,7 @@ def Perm(x: List[float], beta:float=0.5) -> float:
     return f
 
 
-def GoldsteinPrice(x: List[float]) -> float:
+def GoldsteinPrice(x: np.array) -> float:
     x1, x2 = x[0], x[1]
 
     fact1a = (x1 + x2 + 1)**2
@@ -86,7 +85,7 @@ def GoldsteinPrice(x: List[float]) -> float:
     return (fact1*fact2)
 
 
-def Hartmann(x: List[float]) -> float:
+def Hartmann(x: np.array) -> float:
 
     alpha = np.array([1.0, 1.2, 3.0, 3.2])
 
@@ -117,7 +116,7 @@ def Hartmann(x: List[float]) -> float:
     return  (-(2.58 + outer) / 1.94)
 
 
-def Ackley(x: List[float], a:float=20, b:float=0.2, c:float=2*np.pi) -> float:
+def Ackley(x: np.array, a:float=20, b:float=0.2, c:float=2*np.pi) -> float:
     dimension = len(x)
 
     sum1 = 0
@@ -133,7 +132,7 @@ def Ackley(x: List[float], a:float=20, b:float=0.2, c:float=2*np.pi) -> float:
     return (term1 + term2 + a + np.exp(1))
 
 
-def Bohachevsky(x: List[float]) -> float:
+def Bohachevsky(x: np.array) -> float:
     x1, x2 = x[0], x[1]
 
     return (x1**2 +2*(x2**2)-0.3*np.cos(3*np.pi*x1)-0.4*np.cos(4*np.pi*x2)+0.7)
