@@ -72,7 +72,7 @@ def backtracking_line_search(target_func, g, x, p, alpha=1, rho=0.5, c=1e-4):
     else: return alpha
 
 
-def bfgs(fun, dimension:int=2, boundaries=None, sampling_budget:int=100, tol=10e-6, verbose=False):
+def bfgs(fun, dimension:int=2, boundaries=[[-5,-5],[5,5]], sampling_budget:int=100, tol=10e-9, verbose=False):
 
     # Initialization of the surrogate model
     model =  GaussianProcessRegressor() #Pipeline([('poly',   PolynomialFeatures(degree=2)), ('linear', LinearRegression(fit_intercept=False))]) 

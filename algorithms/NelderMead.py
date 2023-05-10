@@ -1,8 +1,8 @@
 import numpy as np
 
-def nelder_mead(fun, dimension:int=2, boundaries=None, step=0.1, 
-                no_improve_thr=10e-6, no_improv_break=10, 
-                sampling_budget:int=10, alpha=1., gamma=2., rho=-0.5, sigma=0.5):
+def nelder_mead(fun, dimension:int=2, boundaries=[[-5,-5],[5,5]], step=0.1, 
+                no_improve_thr=10e-6, no_improv_break=100, 
+                sampling_budget:int=100, alpha=1., gamma=2., rho=-0.5, sigma=0.5):
     """
     Nelder mead optimization algorithm
 

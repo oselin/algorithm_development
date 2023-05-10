@@ -85,7 +85,7 @@ def next_step(model:Pipeline, X:np.array,Y:np.array, lr:float=0.01, method="grad
     return X_next, X_best, Y_best
 
 
-def response_surface(fun, boundaries=None, dimension:int=2,sampling_budget:int=100, tol = 1e-8, sampling_method="box_behnken", sampling_bound=0.5,
+def response_surface(fun, boundaries=[[-5,-5],[5,5]], dimension:int=2,sampling_budget:int=100, tol = 1e-8, sampling_method="box_behnken", sampling_bound=0.5,
                      iteration_method="gradient", learning_rate=0.01, verbose=False):
 
     model = Pipeline([('poly',   PolynomialFeatures(degree=2)),

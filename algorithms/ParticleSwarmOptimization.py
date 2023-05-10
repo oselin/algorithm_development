@@ -46,8 +46,8 @@ def latin_hypercube_sampling(n_samples:int , dimension:int, boundaries):
     return samples
 
 
-def particle_swarm(fun, dimension:int=2, boundaries=None, vel_boundaries=None, sampling_budget:int=1000, 
-                   sampling_method="sobol", n_particles=50, tollerance=10e-6, c1=0.1, c2=0.1, w=0.8):
+def particle_swarm(fun, dimension:int=2, boundaries=[[-5,-5],[5,5]], vel_boundaries=[[0,0],[0.1,0.1]], sampling_budget:int=100, 
+                   sampling_method="sobol", n_particles=10, tollerance=10e-6, c1=0.1, c2=0.1, w=0.8):
 
     boundaries = np.array(boundaries)
     vel_boundaries = np.array(vel_boundaries)

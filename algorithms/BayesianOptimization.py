@@ -64,7 +64,7 @@ def acquisition(model, X, samples):
     return probs
 
 
-def bayesian_optimization(f, dimension:int=2, n_samples:int=15, sampling_budget:int=100, sampling_method="sobol", boundaries=List[float]):
+def bayesian_optimization(f, dimension:int=2, n_samples:int=15, sampling_budget:int=100, sampling_method="sobol", boundaries=[[-5,-5],[5,5]]):
 
     # Modify the function to obtain the minimization
     fun = lambda x: (-1)*f(x)

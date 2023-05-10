@@ -26,11 +26,11 @@ def sobol_sampling(n_samples:int , dimension:int, boundaries:List[float]):
     return samples
 
 
-def sobol(fun, n_samples:int , dimension:int, boundaries:List[float]):
+def sobol(fun, sampling_budget:int=100 , dimension:int=2, boundaries=[[-5,-5],[5,5]]):
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        X_log = sobol_sampling(n_samples=n_samples , dimension=dimension, boundaries=boundaries)
+        X_log = sobol_sampling(n_samples=sampling_budget , dimension=dimension, boundaries=boundaries)
         
     Y_log = fun(X_log.T)
 
