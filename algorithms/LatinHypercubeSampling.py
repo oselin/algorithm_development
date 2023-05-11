@@ -4,7 +4,7 @@ from typing import List
 
 
 
-def latin_hypercube_sampling(n_samples:int , dimension:2, boundaries=[[-5,-5],[5,5]]):
+def latin_hypercube_sampling(sampling_budget:int , dimension=2, boundaries=[[-5,-5],[5,5]]):
     """
     Generate a Latin Hypercube Sample of size n and dimension d.
 
@@ -21,7 +21,7 @@ def latin_hypercube_sampling(n_samples:int , dimension:2, boundaries=[[-5,-5],[5
     boundaries = np.array(boundaries)
 
     samples = qmc.LatinHypercube(scramble=False,d=dimension)
-    samples = samples.random(n_samples)
+    samples = samples.random(sampling_budget)
     samples = qmc.scale(samples, boundaries[0], boundaries[1])
 
     """
@@ -35,7 +35,7 @@ def latin_hypercube_sampling(n_samples:int , dimension:2, boundaries=[[-5,-5],[5
 
 def latin_hypercube(fun, sampling_budget:int=100 , dimension:int=2, boundaries=[[-5,-5],[5,5]]):
 
-    X_log = latin_hypercube_sampling(n_samples=sampling_budget , dimension=dimension, boundaries=boundaries)
+    X_log = latin_hypercube_sampling(sampling_budget=sampling_budget , dimension=dimension, boundaries=boundaries)
     Y_log = fun(X_log.T)
 
     idx = np.argmin(Y_log)

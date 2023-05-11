@@ -4,7 +4,7 @@ from typing import List
 import warnings
 
 
-def sobol_sampling(n_samples:int , dimension:int, boundaries:List[float]):
+def sobol_sampling(sampling_budget:int , dimension:int=2, boundaries=[[-5,-5],[5,5]]):
     """
     Generate a Latin Hypercube Sample of size n and dimension d.
 
@@ -20,7 +20,7 @@ def sobol_sampling(n_samples:int , dimension:int, boundaries:List[float]):
     boundaries = np.array(boundaries)
 
     samples = qmc.Sobol(scramble=False, d=dimension)
-    samples = samples.random(n_samples, workers=-1)
+    samples = samples.random(sampling_budget, workers=-1)
     samples = qmc.scale(samples, boundaries[0], boundaries[1])
 
     return samples
@@ -30,7 +30,7 @@ def sobol(fun, sampling_budget:int=100 , dimension:int=2, boundaries=[[-5,-5],[5
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        X_log = sobol_sampling(n_samples=sampling_budget , dimension=dimension, boundaries=boundaries)
+        X_log = sobol_sampling(sampling_budget=sampling_budget , dimension=dimension, boundaries=boundaries)
         
     Y_log = fun(X_log.T)
 
